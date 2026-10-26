@@ -8,6 +8,8 @@
 
 ## 🎬 Demo
 
+▶️ **[Watch the full demo video (2 min)](demo/launcher-demo.mp4)** — the complete real TV demo, start to finish.
+
 <video src="demo/launcher-demo.mp4" poster="screenshots/01-home.png" width="100%" controls></video>
 
 *Demo video recorded on the previous build — the latest version additionally removes the on-screen temperature and the Storage pill, for an even cleaner top bar.*
