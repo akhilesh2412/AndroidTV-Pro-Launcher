@@ -43,6 +43,12 @@
 2. Send it to your TV with **Send Files to TV** (or a USB drive).
 3. Open it on the TV and install, then press Home and choose **AndroidTV Pro Launcher** as your default home app.
 
+## 🧹 Bloatware removal
+
+I debloated my Xiaomi Mi TV with phone-only ADB — no laptop, no root, nothing
+uninstalled (everything is reversible). Full process, requirements, package lists
+and restore steps: **[DEBLOAT.md](DEBLOAT.md)**.
+
 ## 🛠 Build from source
 
 ```bash
