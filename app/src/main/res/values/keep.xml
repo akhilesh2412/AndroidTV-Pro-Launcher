@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shrink guard: wallpapers are loaded by name (Wallpapers.java getIdentifier),
+     so the resource shrinker must never drop a bundled wallpaper_N drawable,
+     even though no R.drawable reference mentions it. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/wallpaper_*" />

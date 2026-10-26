@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TV">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="/icon.png">
+<title>TV Remote</title>
+<style>
+  :root {
+    --bg: #000; --card: #1c1c1e; --card2: #2c2c2e; --line: rgba(255,255,255,.08);
+    --text: #fff; --dim: rgba(235,235,245,.6); --accent: #0a84ff; --red: #ff453a; --green: #30d158;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+  body { padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 28px); }
+  h1 { font-size: 30px; font-weight: 700; margin: 8px 0 2px; letter-spacing: -.02em; }
+  h2 { font-size: 20px; font-weight: 600; margin: 30px 0 10px; }
+  .sub { color: var(--dim); font-size: 14px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+  .btn { background: var(--card); border-radius: 14px; padding: 13px 16px; font-weight: 600; }
+  .btn:active, .app:active, .chip:active { transform: scale(.97); opacity: .85; }
+  .btn.primary { background: var(--accent); }
+  .btn.wide { width: 100%; }
+  .home { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+    background: var(--card); border-radius: 18px; padding: 18px; font-size: 18px; font-weight: 600; margin-top: 18px; }
+  .chip { background: var(--card); border-radius: 999px; padding: 10px 16px; font-size: 15px; font-weight: 500; }
+  .chip.off { color: var(--dim); }
+  .apps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .app { background: var(--card); border-radius: 14px; overflow: hidden; padding: 0; text-align: left; }
+  .app img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #111; }
+  .app span { display: block; padding: 8px 10px 10px; font-size: 14px; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ph { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; background: #111; }
+  .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ph .x { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 13px;
+    background: rgba(0,0,0,.65); font-size: 15px; line-height: 26px; padding: 0; }
+  .ph .tag { position: absolute; left: 6px; bottom: 4px; font-size: 11px; color: rgba(255,255,255,.75);
+    text-shadow: 0 1px 2px #000; }
+  .card { background: var(--card); border-radius: 14px; padding: 14px; }
+  .card p { margin: 0 0 10px; color: var(--dim); font-size: 14px; }
+  .card ol { margin: 0 0 4px; padding-left: 20px; color: var(--dim); font-size: 14px; }
+  .card li { margin-bottom: 6px; }
+  .card b { color: var(--text); font-weight: 600; }
+  .url { display: flex; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .url:first-of-type { border-top: 0; }
+  .url .name { flex: 1; min-width: 0; font-size: 15px; }
+  .url .name small { display: block; color: var(--dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .url button { background: var(--card2); border-radius: 10px; padding: 8px 12px; font-size: 14px; font-weight: 600; }
+  .hidden { display: none !important; }
+  /* tabs */
+  body.paired { padding-bottom: calc(env(safe-area-inset-bottom) + 86px); }
+  #tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex;
+    background: rgba(22,22,24,.92); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--line); padding: 6px 0 calc(env(safe-area-inset-bottom) + 4px); }
+  #tabs button { flex: 1; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 500; color: rgba(235,235,245,.45); padding: 4px 0; }
+  #tabs button.on { color: var(--accent); }
+  #tabs svg { width: 25px; height: 25px; }
+  /* remote */
+  /* sized so the whole Remote tab fits on one screen: everything else on it takes ~400px */
+  #pad { position: relative; margin-top: 12px; border-radius: 24px; touch-action: none;
+    height: clamp(140px, calc(100vh - 410px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 320px);
+    height: clamp(140px, calc(100svh - 410px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 320px);
+    background: radial-gradient(120% 90% at 50% 0%, #2a2a2e 0%, #18181a 70%); border: 1px solid var(--line);
+    overflow: hidden; -webkit-user-select: none; user-select: none; }
+  #pad .hint { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; color: rgba(235,235,245,.35);
+    font-size: 13px; pointer-events: none; }
+  #pad .dot { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.28), rgba(255,255,255,0) 70%); pointer-events: none;
+    opacity: 0; transition: opacity .2s; }
+  #pad .arrow { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px;
+    color: rgba(255,255,255,.85); opacity: 0; pointer-events: none; }
+  #pad .arrow.flash { animation: flash .35s ease-out; }
+  @keyframes flash { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(1.25); } }
+  .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .key { background: var(--card); border-radius: 14px; height: 50px; display: flex; align-items: center;
+    justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; }
+  .key:active { background: var(--card2); transform: scale(.97); }
+  .key svg { width: 22px; height: 22px; }
+  #kbRow { display: flex; gap: 8px; margin-top: 10px; }
+  #kb { flex: 1; min-width: 0; font: 17px -apple-system, system-ui; color: var(--text); background: var(--card);
+    border: 0; border-radius: 14px; padding: 0 16px; height: 50px; outline: none; }
+  #kb::placeholder { color: rgba(235,235,245,.35); }
+  #remoteMsg { margin-top: 10px; background: #3a2a10; color: #ffd60a; border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+  #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px); transform: translate(-50%, 20px);
+    background: rgba(44,44,46,.96); padding: 12px 18px; border-radius: 14px; font-size: 15px; font-weight: 500;
+    opacity: 0; transition: .25s; pointer-events: none; max-width: calc(100% - 32px); text-align: center; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  /* photo framing */
+  #editor { position: fixed; inset: 0; background: #000; z-index: 10; display: flex; flex-direction: column;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 16px); }
+  #editor .top { display: flex; justify-content: space-between; align-items: center; }
+  #editor .stage { flex: 1; display: flex; align-items: center; }
+  #frame { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; touch-action: none; background: #111; }
+  #frame canvas { width: 100%; height: 100%; display: block; }
+  #frame .guide { position: absolute; pointer-events: none; border: 1px dashed rgba(255,255,255,.55); border-radius: 6px;
+    color: rgba(255,255,255,.75); font-size: 10px; padding: 2px 4px; }
+  #editor .hint { color: var(--dim); font-size: 14px; text-align: center; margin: 14px 0; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .ph { cursor: pointer; }
+  .ph:active { opacity: .8; }
+  /* photo actions */
+  #sheet { position: fixed; inset: 0; z-index: 9; background: rgba(0,0,0,.5); display: flex; align-items: flex-end;
+    padding: 0 10px calc(env(safe-area-inset-bottom) + 10px); }
+  #sheet .panel { width: 100%; }
+  #sheet .group { background: rgba(44,44,46,.97); border-radius: 14px; overflow: hidden; margin-top: 8px; }
+  #sheet img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+  #sheet .group button { display: block; width: 100%; padding: 16px; font-size: 18px; color: var(--accent);
+    border-top: 1px solid var(--line); background: none; }
+  #sheet .group button:first-child { border-top: 0; }
+  #sheet .group button.red { color: var(--red); }
+  #sheet .group button.bold { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sub" id="status">Connecting…</div>
+  <h1>Living Room TV</h1>
+</header>
+
+<!-- pairing -->
+<section id="pair" class="hidden">
+  <h2>Pair this phone</h2>
+  <div class="card">
+    <p>Tap the button, then press <b>Allow</b> on the TV with its remote. You only do this once.</p>
+    <button class="btn primary wide" id="askPair">Pair with TV</button>
+    <p id="pairWait" class="hidden" style="margin:14px 0 0;color:var(--text)">On the TV, choose <b>Allow</b> with the remote (press Right, then OK)…</p>
+  </div>
+</section>
+
+<!-- remote -->
+<main id="app" class="hidden">
+
+  <section data-tab="remote">
+    <div id="remoteMsg" class="hidden"></div>
+    <div id="pad">
+      <div class="dot" id="dot"></div>
+      <svg class="arrow" id="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+      <div class="hint">Swipe to move · tap to select</div>
+    </div>
+    <div class="keys">
+      <button class="key" data-key="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+      <button class="key" id="remoteHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button class="key" data-key="playpause"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13l8-6.5zM15 5h2.5v14H15zM19.5 5H22v14h-2.5z"/></svg></button>
+      <button class="key" data-key="voldown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9zM17 12h4"/></svg></button>
+      <button class="key" data-key="mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6"/></svg></button>
+      <button class="key" data-key="volup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9zM17 12h4M19 10v4"/></svg></button>
+    </div>
+    <form id="kbRow" autocomplete="off">
+      <input id="kb" type="text" placeholder="Type on the TV…" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+      <button type="button" class="key" style="width:56px" id="kbDel" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12zM12 9l6 6M18 9l-6 6"/></svg></button>
+    </form>
+    <p class="sub" style="margin:8px 2px 0;font-size:12px">Open a search box on the TV, then type here. Return = Search.</p>
+  </section>
+
+  <section data-tab="apps">
+    <h2 style="margin-top:14px">Inputs</h2>
+    <div class="row" id="inputs"></div>
+    <h2>Apps</h2>
+    <div class="apps" id="apps"></div>
+  </section>
+
+  <section data-tab="photos">
+    <h2 style="margin-top:14px">Photos</h2>
+    <p class="sub" style="margin:-4px 0 10px">They fade in on the TV home screen. Tap one to show it now, change its framing, swap it or remove it.</p>
+    <button class="btn primary wide" id="addPhotos">Add photos</button>
+    <input type="file" id="file" accept="image/*" multiple class="hidden">
+    <div class="photos" id="photos" style="margin-top:12px"></div>
+  </section>
+
+  <section data-tab="siri">
+    <h2 style="margin-top:14px">Siri</h2>
+    <div class="card">
+      <p>Say <b>“Hey Siri, Netflix on TV”</b>. Set it up once per app:</p>
+      <ol>
+        <li>Tap <b>Copy</b> next to an app below.</li>
+        <li>Open the <b>Shortcuts</b> app → <b>+</b> → <b>Add Action</b> → search <b>Get Contents of URL</b>.</li>
+        <li>Paste the link into it, then name the shortcut what you'll say, e.g. <b>Netflix on TV</b>.</li>
+      </ol>
+    </div>
+    <div class="card" style="margin-top:10px" id="siri"></div>
+    <div class="card" style="margin-top:10px">
+      <p><b>Play YouTube links on the TV:</b> make a shortcut with <b>Show in Share Sheet</b> on, input <b>URLs</b>, and a
+        <b>Get Contents of URL</b> action with this link plus the <b>Shortcut Input</b> added at the end. Then share any
+        YouTube video to it.</p>
+      <div class="url"><div class="name">YouTube link<small id="ytUrl"></small></div><button id="copyYt">Copy</button></div>
+    </div>
+    <h2 style="margin-top:34px"></h2>
+    <button class="btn wide" id="forget" style="color:var(--red)">Unpair this phone</button>
+  </section>
+</main>
+
+<nav id="tabs" class="hidden">
+  <button data-go="remote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="4"/><circle cx="12" cy="8.5" r="2.6"/><path d="M10 15h4M10 18h4"/></svg>Remote</button>
+  <button data-go="apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>Apps</button>
+  <button data-go="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></svg>Photos</button>
+  <button data-go="siri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>Siri</button>
+</nav>
+
+<!-- framing a photo before it is sent -->
+<div id="editor" class="hidden">
+  <div class="top">
+    <button class="btn" id="edCancel">Skip</button>
+    <span class="sub" id="edCount"></span>
+    <button class="btn primary" id="edSend">Send to TV</button>
+  </div>
+  <div class="stage">
+    <div style="width:100%">
+      <div id="frame">
+        <canvas id="cv" width="1280" height="720"></canvas>
+        <div class="guide" style="left:4%;top:7%;width:22%;height:27%">clock</div>
+        <div class="guide" style="right:3%;top:7%;width:36%;height:30%">buttons</div>
+        <div class="guide" style="left:4%;right:4%;bottom:4%;height:21%">apps</div>
+      </div>
+      <div class="hint">Drag to move · pinch or slide to zoom<br>Keep faces out of the dashed boxes</div>
+      <input type="range" id="zoom" min="1" max="3" step="0.01" value="1">
+    </div>
+  </div>
+</div>
+
+<div id="sheet" class="hidden">
+  <div class="panel">
+    <div class="group">
+      <img id="shImg" alt="">
+      <button class="bold" id="shShow">Show on TV now</button>
+      <button id="shFrame">Change framing</button>
+      <button id="shReplace">Replace with another photo</button>
+      <button class="red" id="shRemove">Remove from TV</button>
+    </div>
+    <div class="group"><button class="bold" id="shCancel">Cancel</button></div>
+  </div>
+</div>
+<input type="file" id="replaceFile" accept="image/*" class="hidden">
+
+<div id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let token = null;
+try { token = localStorage.getItem("tvtoken"); } catch (e) {}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+async function api(path, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  if (token) headers["X-Token"] = token;
+  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  if (res.status === 401) { forget(); throw new Error("not paired"); }
+  return res.json();
+}
+
+function withToken(path) {
+  return path + (path.includes("?") ? "&" : "?") + "t=" + encodeURIComponent(token);
+}
+
+function forget() {
+  token = null;
+  try { localStorage.removeItem("tvtoken"); } catch (e) {}
+  show("pair");
+}
+
+function show(which) {
+  $("pair").classList.toggle("hidden", which !== "pair");
+  $("app").classList.toggle("hidden", which !== "app");
+  $("tabs").classList.toggle("hidden", which !== "app");
+  document.body.classList.toggle("paired", which === "app");
+  $("status").textContent = which === "app" ? "Connected" : "Not paired";
+}
+
+// ------------------------------------------------------------ pairing
+$("askPair").onclick = async () => {
+  let r;
+  try { r = await fetch("/api/pair", { method: "POST" }).then((x) => x.json()); } catch (e) { toast("Can't reach the TV"); return; }
+  if (!r.ok) { toast(r.error); return; }
+  $("askPair").disabled = true;
+  $("pairWait").classList.remove("hidden");
+  // wait for the answer on the TV (the prompt closes itself after a minute)
+  for (let i = 0; i < 50; i++) {
+    await new Promise((res) => setTimeout(res, 1500));
+    let st;
+    try { st = await fetch("/api/pair/status?id=" + encodeURIComponent(r.id)).then((x) => x.json()); } catch (e) { continue; }
+    if (st.waiting) continue;
+    $("askPair").disabled = false;
+    $("pairWait").classList.add("hidden");
+    if (!st.ok) { toast(st.error); return; }
+    token = st.token;
+    try { localStorage.setItem("tvtoken", token); } catch (e) {}
+    toast("Paired");
+    load();
+    return;
+  }
+  $("askPair").disabled = false;
+  $("pairWait").classList.add("hidden");
+  toast("Nobody answered on the TV");
+};
+
+// ------------------------------------------------------------ remote
+async function load() {
+  let s;
+  try { s = await api("/api/state"); } catch (e) { return; }
+  show("app");
+  go(tab);
+
+  const inputs = $("inputs");
+  inputs.innerHTML = "";
+  s.inputs.forEach((i) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (i.connected ? "" : " off");
+    b.textContent = i.label;
+    b.onclick = () => act("/api/input?name=" + encodeURIComponent(i.label), i.label);
+    inputs.appendChild(b);
+  });
+
+  const apps = $("apps");
+  apps.innerHTML = "";
+  s.apps.forEach((a) => {
+    const b = document.createElement("button");
+    b.className = "app";
+    b.innerHTML = '<img loading="lazy" alt=""><span></span>';
+    b.querySelector("img").src = withToken("/api/banner?pkg=" + encodeURIComponent(a.pkg));
+    b.querySelector("span").textContent = a.label;
+    b.onclick = () => act("/api/open?app=" + encodeURIComponent(a.pkg), a.label);
+    apps.appendChild(b);
+  });
+
+  renderPhotos(s.photos);
+
+  const base = location.origin;
+  const siri = $("siri");
+  siri.innerHTML = "";
+  s.apps.filter((a) => a.dock).concat([{ label: "Home", home: true }]).forEach((a) => {
+    const url = withToken(base + (a.home ? "/api/home" : "/api/open?app=" + encodeURIComponent(a.label.toLowerCase())));
+    const row = document.createElement("div");
+    row.className = "url";
+    row.innerHTML = '<div class="name"></div><button>Copy</button>';
+    row.querySelector(".name").innerHTML = "";
+    row.querySelector(".name").append(a.label + " on TV");
+    const small = document.createElement("small");
+    small.textContent = url;
+    row.querySelector(".name").appendChild(small);
+    row.querySelector("button").onclick = () => copy(url);
+    siri.appendChild(row);
+  });
+  const yt = withToken(base + "/api/youtube") + "&url=";
+  $("ytUrl").textContent = yt;
+  $("copyYt").onclick = () => copy(yt);
+}
+
+async function act(path, label) {
+  const r = await api(path, { method: "POST" });
+  toast(r.ok ? "Opening " + (r.opened || label) : r.error);
+}
+
+// ------------------------------------------------------------ tabs
+let tab = "remote";
+try { tab = localStorage.getItem("tvtab") || "remote"; } catch (e) {}
+function go(t) {
+  tab = t;
+  try { localStorage.setItem("tvtab", t); } catch (e) {}
+  document.querySelectorAll("[data-tab]").forEach((s) => s.classList.toggle("hidden", s.dataset.tab !== t));
+  document.querySelectorAll("[data-go]").forEach((b) => b.classList.toggle("on", b.dataset.go === t));
+  window.scrollTo(0, 0);
+  if (t === "remote") checkRemote();
+}
+document.querySelectorAll("[data-go]").forEach((b) => (b.onclick = () => go(b.dataset.go)));
+go(tab);
+
+// ------------------------------------------------------------ remote
+let remoteReady = false;
+async function checkRemote() {
+  if (!token) return;
+  let r;
+  try { r = await api("/api/remote"); } catch (e) { return; }
+  remoteState(r);
+}
+function remoteState(r) {
+  if (!r) return;
+  remoteReady = !!r.ready;
+  $("remoteMsg").classList.toggle("hidden", remoteReady);
+  if (!remoteReady) {
+    $("remoteMsg").textContent = r.message || "Connecting…";
+    clearTimeout(checkRemote.t);
+    if (tab === "remote" && !document.hidden) checkRemote.t = setTimeout(checkRemote, 2000);
+  }
+}
+
+// key presses go out one request at a time, in order; repeats of the same key are merged
+const keyQ = [];
+let sending = false;
+function key(k, n = 1) {
+  const last = keyQ[keyQ.length - 1];
+  if (last && last.k === k && last.n + n <= 20) last.n += n; else keyQ.push({ k, n });
+  pump();
+}
+function typeText(text) {
+  const last = keyQ[keyQ.length - 1];
+  if (last && last.k === "text") last.text += text; else keyQ.push({ k: "text", text });
+  pump();
+}
+async function pump() {
+  if (sending) return;
+  sending = true;
+  while (keyQ.length) {
+    const job = keyQ.shift();
+    try {
+      const r = job.k === "text"
+        ? await api("/api/text", { method: "POST", body: JSON.stringify({ text: job.text }) })
+        : await api("/api/key?k=" + job.k + "&n=" + job.n, { method: "POST" });
+      if (!r.ok) { remoteState(r.remote || { ready: false, message: r.error }); keyQ.length = 0; }
+    } catch (e) {
+      keyQ.length = 0;
+    }
+  }
+  sending = false;
+}
+
+document.querySelectorAll("[data-key]").forEach((b) => (b.onclick = () => key(b.dataset.key)));
+$("remoteHome").onclick = async () => { await api("/api/home", { method: "POST" }); };
+
+// trackpad: travel in one direction = arrow presses (one per STEP px), a tap = OK
+const pad = $("pad"), dot = $("dot"), arrow = $("arrow");
+const STEP = 46;
+let g = null;
+const ROT = { up: 0, right: 90, down: 180, left: 270 };
+function flash(dir) {
+  arrow.style.rotate = ROT[dir] + "deg";
+  arrow.classList.remove("flash");
+  void arrow.offsetWidth;
+  arrow.classList.add("flash");
+}
+function emit(dir) { key(dir); flash(dir); }
+function padPoint(e) { const r = pad.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+pad.addEventListener("pointerdown", (e) => {
+  pad.setPointerCapture(e.pointerId);
+  const p = padPoint(e);
+  g = { x0: p.x, y0: p.y, x: p.x, y: p.y, ax: 0, ay: 0, t0: performance.now(), steps: 0, axis: null };
+  dot.style.left = p.x + "px"; dot.style.top = p.y + "px"; dot.style.opacity = 1;
+});
+pad.addEventListener("pointermove", (e) => {
+  if (!g) return;
+  const p = padPoint(e);
+  g.ax += p.x - g.x; g.ay += p.y - g.y; g.x = p.x; g.y = p.y;
+  dot.style.left = p.x + "px"; dot.style.top = p.y + "px";
+  // lock to the main direction after a little movement; switch only on a clear change
+  if (!g.axis && Math.hypot(g.ax, g.ay) > 12) g.axis = Math.abs(g.ax) > Math.abs(g.ay) ? "x" : "y";
+  if (g.axis === "x" && Math.abs(g.ay) > STEP * 1.4 && Math.abs(g.ay) > Math.abs(g.ax) * 2) { g.axis = "y"; g.ax = 0; }
+  if (g.axis === "y" && Math.abs(g.ax) > STEP * 1.4 && Math.abs(g.ax) > Math.abs(g.ay) * 2) { g.axis = "x"; g.ay = 0; }
+  while (g.axis === "x" && Math.abs(g.ax) >= STEP) { emit(g.ax > 0 ? "right" : "left"); g.ax -= Math.sign(g.ax) * STEP; g.steps++; }
+  while (g.axis === "y" && Math.abs(g.ay) >= STEP) { emit(g.ay > 0 ? "down" : "up"); g.ay -= Math.sign(g.ay) * STEP; g.steps++; }
+});
+function endGesture() {
+  if (!g) return;
+  const dx = g.x - g.x0, dy = g.y - g.y0, dist = Math.hypot(dx, dy), dt = performance.now() - g.t0;
+  if (dist < 10 && dt < 400) {
+    key("ok");
+  } else if (g.steps === 0 && dist >= 18) {
+    // a short flick still counts as one step
+    emit(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+  }
+  dot.style.opacity = 0;
+  g = null;
+}
+pad.addEventListener("pointerup", endGesture);
+pad.addEventListener("pointercancel", endGesture);
+
+// keyboard: typing here is mirrored live on the TV (deletions included)
+let kbPrev = "";
+$("kb").addEventListener("input", () => {
+  const v = $("kb").value;
+  let i = 0;
+  while (i < kbPrev.length && i < v.length && kbPrev[i] === v[i]) i++;
+  const removed = kbPrev.length - i, added = v.slice(i);
+  if (removed > 0) key("backspace", removed);
+  if (added) typeText(added);
+  kbPrev = v;
+});
+$("kbRow").onsubmit = (e) => {
+  e.preventDefault();
+  key("enter");
+  $("kb").value = "";
+  kbPrev = "";
+};
+$("kbDel").onclick = () => {
+  key("backspace");
+  if (kbPrev) { kbPrev = kbPrev.slice(0, -1); $("kb").value = kbPrev; }
+};
+$("forget").onclick = async () => {
+  if (!confirm("Unpair this phone?")) return;
+  try { await api("/api/unpair", { method: "POST" }); } catch (e) {}
+  forget();
+};
+
+// http pages can't use the clipboard API, so copy through a hidden text field
+function copy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) {}
+  ta.remove();
+  if (ok) toast("Copied");
+  else prompt("Copy this link:", text);
+}
+
+// ------------------------------------------------------------ photos
+let photoVersion = Date.now();   // re-framed photos keep their id, so bust the image cache
+
+function renderPhotos(list) {
+  const box = $("photos");
+  box.innerHTML = "";
+  list.slice().reverse().forEach((p) => {
+    const d = document.createElement("div");
+    d.className = "ph";
+    d.innerHTML = '<img loading="lazy" alt="">';
+    d.querySelector("img").src = withToken("/api/photo?id=" + p.id + "&v=" + photoVersion);
+    d.onclick = () => openSheet(p.id);
+    box.appendChild(d);
+  });
+}
+
+let sheetId = null;
+function openSheet(id) {
+  sheetId = id;
+  $("shImg").src = withToken("/api/photo?id=" + id + "&v=" + photoVersion);
+  $("sheet").classList.remove("hidden");
+}
+function closeSheet() { $("sheet").classList.add("hidden"); }
+$("sheet").onclick = (e) => { if (e.target === $("sheet")) closeSheet(); };
+$("shCancel").onclick = closeSheet;
+$("shShow").onclick = async () => {
+  closeSheet();
+  const r = await api("/api/photo/show?id=" + sheetId, { method: "POST" });
+  toast(r.ok ? "Showing on the TV" : r.error);
+};
+$("shRemove").onclick = async () => {
+  if (!confirm("Remove this photo from the TV?")) return;
+  closeSheet();
+  const r = await api("/api/photo/delete?id=" + sheetId, { method: "POST" });
+  toast(r.ok ? "Removed" : r.error);
+  load();
+};
+$("shFrame").onclick = () => {
+  closeSheet();
+  // start from the full photo the phone sent originally (or the crop, for older photos)
+  edit([{ src: withToken("/api/photo?id=" + sheetId + "&orig=1&v=" + photoVersion), replace: sheetId, keepOriginal: true }]);
+};
+$("shReplace").onclick = () => { closeSheet(); $("replaceFile").click(); };
+$("replaceFile").onchange = () => {
+  const f = $("replaceFile").files[0];
+  $("replaceFile").value = "";
+  if (f) edit([{ file: f, replace: sheetId }]);
+};
+
+$("addPhotos").onclick = () => $("file").click();
+$("file").onchange = () => {
+  const files = Array.from($("file").files);
+  $("file").value = "";
+  edit(files.map((f) => ({ file: f })));
+};
+
+// a job is { file } for a new photo, { file, replace: id } to swap a photo,
+// or { src, replace: id, keepOriginal: true } to re-frame one
+let queue = [], total = 0, job = null, img = null, zoom = 1, ox = 0, oy = 0;
+
+function edit(jobs) {
+  queue = jobs;
+  total = jobs.length;
+  next();
+}
+const cv = $("cv"), ctx = cv.getContext("2d");
+
+function next() {
+  if (!queue.length) { $("editor").classList.add("hidden"); load(); return; }
+  job = queue.shift();
+  $("edCount").textContent = total > 1 ? (total - queue.length) + " of " + total : "";
+  $("edCancel").textContent = job.replace ? "Cancel" : "Skip";
+  $("edSend").textContent = job.replace ? "Save" : "Send to TV";
+  const url = job.file ? URL.createObjectURL(job.file) : job.src;
+  const im = new Image();
+  im.onload = () => {
+    img = im; zoom = 1; $("zoom").value = 1;
+    // start with the faces' usual spot: upper middle of the photo
+    const s = baseScale() * zoom;
+    ox = (1280 - img.width * s) / 2;
+    oy = Math.min(0, (720 - img.height * s) * 0.35);
+    clamp(); draw();
+    $("editor").classList.remove("hidden");
+  };
+  im.onerror = () => { toast("Couldn't open that photo"); next(); };
+  im.src = url;
+}
+
+function baseScale() { return Math.max(1280 / img.width, 720 / img.height); }
+
+function clamp() {
+  const s = baseScale() * zoom, w = img.width * s, h = img.height * s;
+  ox = Math.min(0, Math.max(1280 - w, ox));
+  oy = Math.min(0, Math.max(720 - h, oy));
+}
+
+function draw() {
+  const s = baseScale() * zoom;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, 1280, 720);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, ox, oy, img.width * s, img.height * s);
+}
+
+function setZoom(z, cx = 640, cy = 360) {
+  const old = baseScale() * zoom;
+  zoom = Math.min(3, Math.max(1, z));
+  const s = baseScale() * zoom;
+  // keep the point under the fingers still
+  ox = cx - (cx - ox) * (s / old);
+  oy = cy - (cy - oy) * (s / old);
+  $("zoom").value = zoom;
+  clamp(); draw();
+}
+
+$("zoom").oninput = () => setZoom(parseFloat($("zoom").value));
+
+const pts = new Map();
+let pinch = null;
+const frame = $("frame");
+function local(e) {
+  const r = frame.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * 1280 / r.width, y: (e.clientY - r.top) * 720 / r.height };
+}
+frame.addEventListener("pointerdown", (e) => { frame.setPointerCapture(e.pointerId); pts.set(e.pointerId, local(e)); });
+frame.addEventListener("pointermove", (e) => {
+  if (!pts.has(e.pointerId) || !img) return;
+  const p = local(e), prev = pts.get(e.pointerId);
+  pts.set(e.pointerId, p);
+  if (pts.size === 2) {
+    const [a, b] = Array.from(pts.values());
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinch) setZoom(zoom * dist / pinch, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    pinch = dist;
+  } else if (pts.size === 1) {
+    ox += p.x - prev.x; oy += p.y - prev.y;
+    clamp(); draw();
+  }
+});
+["pointerup", "pointercancel"].forEach((t) => frame.addEventListener(t, (e) => { pts.delete(e.pointerId); pinch = null; }));
+
+$("edCancel").onclick = () => next();
+const jpeg = (canvas, q) => new Promise((res) => canvas.toBlob(res, "image/jpeg", q));
+
+/** The whole photo, at most 2048 px on its long side: kept on the TV so it can be re-framed later. */
+function original() {
+  const k = Math.min(1, 2048 / Math.max(img.width, img.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.width * k);
+  c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return jpeg(c, 0.85);
+}
+
+$("edSend").onclick = async () => {
+  $("edSend").disabled = true;
+  const post = (path, body) => api(path, { method: "POST", headers: { "Content-Type": "image/jpeg" }, body });
+  try {
+    const crop = await jpeg(cv, 0.88);
+    let r, id = job.replace;
+    if (id) {
+      r = await post("/api/photo/replace?id=" + id, crop);
+    } else {
+      r = await post("/api/photo", crop);
+      id = r.id;
+    }
+    if (r.ok && !job.keepOriginal) await post("/api/photo/original?id=" + id, await original());
+    photoVersion = Date.now();
+    toast(r.ok ? (job.replace ? "Updated on the TV" : "On the TV now") : r.error);
+  } catch (e) {
+    toast("Couldn't send: is the phone on the home Wi-Fi?");
+  }
+  $("edSend").disabled = false;
+  next();
+};
+
+// ------------------------------------------------------------ start
+if (token) load(); else show("pair");
+document.addEventListener("visibilitychange", () => { if (!document.hidden && token) load(); });
+</script>
+</body>
+</html>

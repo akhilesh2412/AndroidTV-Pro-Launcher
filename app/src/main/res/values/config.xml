@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Edit this file to customise the home screen, then run ./build_and_install.sh -->
+<resources>
+    <!-- Dock apps, left to right. Package names; missing or disabled apps are skipped. -->
+    <!-- YOUTUBE_ALIAS is special: AppRepo replaces it with the installed app whose
+         label contains "TizenTube", shown renamed to YouTube with a YouTube banner. -->
+    <string-array name="dock_packages">
+        <item>YOUTUBE_ALIAS</item>
+        <item>com.pro.akhileshtv</item>
+        <item>com.google.android.videos</item>
+    </string-array>
+
+    <!-- Apps per row, in the dock and in the grid (3 to 6). -->
+    <integer name="columns">5</integer>
+
+    <!-- Apps never shown in the grid. -->
+    <string-array name="hidden_packages">
+        <item>com.google.android.tvlauncher</item>
+        <item>com.android.tv.settings</item>
+        <item>com.mitv.dream</item>
+        <item>com.android.gallery3d</item>
+    </string-array>
+
+    <!-- Name in the greeting ("Good evening, Sam"). Leave empty for no name. -->
+    <string name="greeting_name"></string>
+
+    <!-- Follower counters under the top-right buttons, refreshed every 30 minutes while the home
+         screen is open. Leave any of them empty to hide that counter. -->
+    <!-- YouTube channel handle -->
+    <string name="youtube_channel"></string>
+    <!-- Instagram username (instagram.com/<this>) -->
+    <string name="instagram_user"></string>
+    <!-- Facebook profile or page name (facebook.com/<this>) -->
+    <string name="facebook_page"></string>
+
+
+    <!-- Wallpapers: 1280x720 images named wallpaper_1.jpg, wallpaper_2.jpg, ... in res/drawable-nodpi/.
+         With more than one they fade from one to the next every wallpaper_seconds. false = pitch black. -->
+    <bool name="use_wallpaper">true</bool>
+    <integer name="wallpaper_seconds">30</integer>
+</resources>
